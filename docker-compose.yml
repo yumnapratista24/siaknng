@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  auth:
+    restart: always
+    build: siaknng/auth/
+    expose:
+      - 8000
+    links:
+      - postgres:postgres
+    volumes:
+      - static:/app/static/
+    env_file: siaknng/auth/.env
+    environment:
+      DEBUG: 'true'
+    command: /usr/local/bin/gunicorn docker_django.wsgi:application -w 2 -b :8000
+
+  nginx:
+    restart: always
+    build: ./nginx/
+    ports:
+      - 8888:80
+    volumes:
+      - static:/www/static
+    links:
+      - auth:web
+
+  postgres:
+    restart: always
+    image: postgres:latest
+#    ports:
+#      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  static:
+  pgdata:

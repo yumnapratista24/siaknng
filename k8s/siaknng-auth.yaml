@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: siaknng-auth-container
-          image: siaknngregistry.azurecr.io/auth:1.0.3
+          image: siaknngregistry.azurecr.io/auth:1.0.5
           ports:
           - containerPort: 80
           env:
@@ -22,17 +22,19 @@ spec:
               value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
             - name: ALLOWED_HOSTS
               value: "*"
+            - name: POSTGRES_HOST
+              value: postgres-auth
             - name: POSTGRES_NAME
               value: postgres
-            - name: POTGRES_USER
+            - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-auth-credentials
                   key: user
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-auth-credentials
                   key: password
 
 ---
@@ -55,28 +57,30 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: django-migrations
+  name: siaknng-auth-migration
 spec:
   template:
     spec:
       containers:
-        - name: siak-auth-migration
-          image: siaknngregistry.azurecr.io/auth:1.0.3
+        - name: siaknng-auth-migration-container
+          image: siaknngregistry.azurecr.io/auth:1.0.5
           command: ['python', 'manage.py', 'migrate']
           env:
             - name: SECRET_KEY
               value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: POSTGRES_HOST
+              value: postgres-auth
             - name: POSTGRES_NAME
               value: postgres
-            - name: POTGRES_USER
+            - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-auth-credentials
                   key: user
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
+                  name: postgres-auth-credentials
                   key: password
       restartPolicy: Never
   backoffLimit: 5

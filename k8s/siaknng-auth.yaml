@@ -1,0 +1,82 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: siaknng-auth-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: siaknng-auth
+  template:
+    metadata:
+      labels:
+        app: siaknng-auth
+    spec:
+      containers:
+        - name: siaknng-auth-container
+          image: siaknngregistry.azurecr.io/auth:1.0.3
+          ports:
+          - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: POSTGRES_NAME
+              value: postgres
+            - name: POTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: siaknng-auth-service
+spec:
+  selector:
+    app: siaknng-auth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrations
+spec:
+  template:
+    spec:
+      containers:
+        - name: siak-auth-migration
+          image: siaknngregistry.azurecr.io/auth:1.0.3
+          command: ['python', 'manage.py', 'migrate']
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: POSTGRES_NAME
+              value: postgres
+            - name: POTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+      restartPolicy: Never
+  backoffLimit: 5

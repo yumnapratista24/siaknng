@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: siaknng-payment-container
-          image: siaknngregistry.azurecr.io/payment:1.0.0
+          image: siaknngregistry.azurecr.io/payment:1.0.1
           command: ['gunicorn', 'service_pembayaran.wsgi:application', '--bind', ':80']
           ports:
           - containerPort: 80
@@ -60,13 +60,13 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: siaknng-payment-migration
+  name: siaknng-payment-migration-1.0.1
 spec:
   template:
     spec:
       containers:
         - name: siaknng-payment-migration-container
-          image: siaknngregistry.azurecr.io/payment:1.0.0
+          image: siaknngregistry.azurecr.io/payment:1.0.1
           command: ['python', 'manage.py', 'migrate']
           env:
             - name: SECRET_KEY

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: siaknng-calendar-container
-          image: siaknngregistry.azurecr.io/calendar:1.0.0
+          image: siaknngregistry.azurecr.io/calendar:1.0.1
           command: ['gunicorn', 'service_jadwal_siak.wsgi:application', '--bind', ':80']
           ports:
           - containerPort: 80
@@ -60,13 +60,13 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: siaknng-calendar-migration
+  name: siaknng-calendar-migration-1.0.1
 spec:
   template:
     spec:
       containers:
         - name: siaknng-calendar-migration-container
-          image: siaknngregistry.azurecr.io/calendar:1.0.0
+          image: siaknngregistry.azurecr.io/calendar:1.0.1
           command: ['python', 'manage.py', 'migrate']
           env:
             - name: SECRET_KEY

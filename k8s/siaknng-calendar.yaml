@@ -1,0 +1,91 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: siaknng-calendar-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: siaknng-calendar
+  template:
+    metadata:
+      labels:
+        app: siaknng-calendar
+    spec:
+      containers:
+        - name: siaknng-calendar-container
+          image: siaknngregistry.azurecr.io/calendar:1.0.0
+          command: ['gunicorn', 'service_jadwal_siak.wsgi:application', '--bind', ':80']
+          ports:
+          - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: DB_HOST
+              value: postgres-calendar
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: postgres
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-calendar-credentials
+                  key: user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-calendar-credentials
+                  key: password
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: siaknng-calendar-service
+spec:
+  selector:
+    app: siaknng-calendar
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: siaknng-calendar-migration
+spec:
+  template:
+    spec:
+      containers:
+        - name: siaknng-calendar-migration-container
+          image: siaknngregistry.azurecr.io/calendar:1.0.0
+          command: ['python', 'manage.py', 'migrate']
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: DB_HOST
+              value: postgres-calendar
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: postgres
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-calendar-credentials
+                  key: user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-calendar-credentials
+                  key: password
+      restartPolicy: Never
+  backoffLimit: 5

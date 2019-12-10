@@ -1,0 +1,91 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: siaknng-payment-deployment
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: siaknng-payment
+  template:
+    metadata:
+      labels:
+        app: siaknng-payment
+    spec:
+      containers:
+        - name: siaknng-payment-container
+          image: siaknngregistry.azurecr.io/payment:1.0.1
+          command: ['gunicorn', 'service_pembayaran.wsgi:application', '--bind', ':80']
+          ports:
+          - containerPort: 80
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: DB_HOST
+              value: postgres-payment
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: postgres
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-payment-credentials
+                  key: user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-payment-credentials
+                  key: password
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: siaknng-payment-service
+spec:
+  selector:
+    app: siaknng-payment
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: siaknng-payment-migration-1.0.1
+spec:
+  template:
+    spec:
+      containers:
+        - name: siaknng-payment-migration-container
+          image: siaknngregistry.azurecr.io/payment:1.0.1
+          command: ['python', 'manage.py', 'migrate']
+          env:
+            - name: SECRET_KEY
+              value: "f3t^9es$l+!6y4qjrl+^_8$z$-2as4kkoj=ly36)^vph9_!z(j"
+            - name: DB_HOST
+              value: postgres-payment
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: postgres
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-payment-credentials
+                  key: user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-payment-credentials
+                  key: password
+      restartPolicy: Never
+  backoffLimit: 5

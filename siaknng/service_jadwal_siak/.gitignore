@@ -1,0 +1,10 @@
+.git
+.vscode
+.env
+env
+db.sqlite3
+
+api_jadwal_siak/*cache*
+
+service_jadwal_siak/__py*cach*
+static/

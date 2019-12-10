@@ -1,0 +1,48 @@
+version: '3.1'
+services:
+  db:
+    image: postgres
+    restart: always
+    environment: 
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports: 
+      - "${DB_EXPOSE}:5432"
+    volumes:
+      - ./data_jadwal_siak:/var/lib/postgresql/data/
+    networks: 
+      - backend
+  web:
+    build: .
+    command: gunicorn service_jadwal_siak.wsgi:application --bind 0.0.0.0:9000
+    volumes:
+      - .:/code
+      - ./static:/code/static
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+    depends_on:
+      - db
+    networks: 
+      - backend
+
+  nginx:
+    image: nginx:1.16.1
+    ports:
+      - "8000:80"
+    volumes: 
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ./static:/code/static
+    depends_on: 
+      - web
+    networks:
+      - backend
+
+networks: 
+  backend:
+    driver: bridge
